@@ -116,7 +116,7 @@
 - name: Initialize Kubernetes on the controller node
   ansible.builtin.command: >
     kubeadm init --pod-network-cidr=192.168.0.0/16
-  when: inventory_hostname in controller
+  when: "'controller' in group_names"
   register: kubeadm_output
   become: true
 
@@ -124,19 +124,19 @@
   copy:
     content: "{{ kubeadm_output.stdout_lines | join('\n') }}"
     dest: /tmp/kubeadm-init-output
-  when: inventory_hostname in controller
+  when: "'controller' in group_names"
 
 - name: Configure kubectl for the control node
   shell: |
     mkdir -p $HOME/.kube
     cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     chown $(id -u):$(id -g) $HOME/.kube/config
-  when: inventory_hostname in controller
+  when: "'controller' in group_names"
 
 - name: Install Calico network plugin
   shell: |
     kubectl apply -f https://docs.tigera.io/archive/v2.0/getting-started/kubernetes/installation/policy-controller.yaml
-  when: inventory_hostname in controller
+  when: "'controller' in group_names"
 
 - name: Get join command from the controller
   shell: cat /tmp/kubeadm-init-output | grep -E 'kubeadm join.*'
