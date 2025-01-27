@@ -140,9 +140,6 @@
     enabled: no
   when: "'controller' in group_names"
 
-- name: renew all certificates
-  shell: kubeadm certs renew all
-  when: "'controller' in group_names"
 
 - name: Initialize Kubernetes on the controller node
   ansible.builtin.shell: >
@@ -151,6 +148,10 @@
   register: kubeadm_output
   become: true
 
+- name: renew all certificates
+  shell: kubeadm certs renew all
+  when: "'controller' in group_names"
+  
 - name: Save kubeadm join command to a file
   copy:
     content: "{{ kubeadm_output.stdout_lines | join('\n') }}"
@@ -158,10 +159,7 @@
   when: "'controller' in group_names"
 
 - name: Configure kubectl for the control node
-  shell: |
-    mkdir -p $HOME/.kube
-    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    chown $(id -u):$(id -g) $HOME/.kube/config
+  ansible.builtin.shell: export KUBECONFIG=$HOME/.kube/config
   when: "'controller' in group_names"
 
 
