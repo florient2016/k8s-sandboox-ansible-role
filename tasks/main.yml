@@ -171,7 +171,7 @@
 - name: renew all certificates
   shell: kubeadm certs renew all
   when: "'controller' in group_names"
-  
+
 - name: Install Calico network plugin
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
@@ -185,12 +185,12 @@
 
 - name: Join worker nodes to the cluster
   shell: "{{ join_command.stdout }}"
-  when: "'worker1' in workers"
+  when: "'worker1' in group_names"
   become: true
 
 - name: Join worker nodes to the cluster
   shell: "{{ join_command.stdout }}"
-  when: "'worker2' in workers"
+  when: "'worker2' in group_names"
   become: true
 
 
