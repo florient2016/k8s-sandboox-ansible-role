@@ -148,10 +148,8 @@
   register: kubeadm_output
   become: true
 
-- name: renew all certificates
-  shell: kubeadm certs renew all
-  when: "'controller' in group_names"
-  
+
+
 - name: Save kubeadm join command to a file
   copy:
     content: "{{ kubeadm_output.stdout_lines | join('\n') }}"
@@ -170,6 +168,10 @@
     state: restarted
   when: "'controller' in group_names"
 
+- name: renew all certificates
+  shell: kubeadm certs renew all
+  when: "'controller' in group_names"
+  
 - name: Install Calico network plugin
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
