@@ -44,24 +44,23 @@ A list of other roles hosted on Galaxy should go here, plus any details in regar
 ## Example Use Case
 
 Deploy a Kubernetes cluster on 3 nodes:
-```bash
-   - name: Deploy Kubernetes cluster
-  hosts: controller,worker1, worker2
-  become: yes
-  roles:
-    - k8s-deploy
+`- name: Deploy Kubernetes cluster
+hosts: controller,worker1, worker2
+become: yes
+roles:
+  - k8s-deploy`
 
-** License **
+## License 
 -------
 
 BSD
 
-** Contributing **
+## Contributing 
 ------------------
 
 Contributions are welcome! Please submit a pull request with your changes.
 
-** Issues **
+## Issues 
 ------------------
 
 If you encounter any issues, please open an issue on this repository.
