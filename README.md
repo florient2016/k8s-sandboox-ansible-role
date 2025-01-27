@@ -49,7 +49,7 @@ Deploy a Kubernetes cluster on 3 nodes:
   hosts: controller,worker1,worker2
   become: yes
   roles:
-    - k8s-deploy
+    - k8s-sandboox-ansible-role
   ```
 
 ## License 
