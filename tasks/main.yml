@@ -1,2 +1,150 @@
 ---
 # tasks file for k8s-sandboox-ansible-role
+- name: Update all packages
+  ansible.builtin.yum:
+    name: '*'
+    state: latest
+
+- name: uninstall podman-docker
+  ansible.builtin.yum:
+    name: podman-docker
+    state: absent
+
+- name: Install dnf-plugins-core
+  ansible.builtin.yum:
+    name: dnf-plugins-core
+    state: present
+
+- name: Add Docker repo
+  ansible.builtin.shell: |
+    dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  become: true
+  when: ansible_virtualization_role != "guest"
+
+- name: Permanently disable swap in /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '.* swap .*'
+    replace: '#\0'
+
+- name: Add Kubernetes repo
+  copy:
+    content: |
+      [kubernetes]
+      name=Kubernetes
+      baseurl=https://pkgs.k8s.io/core:/stable:/v1.32/rpm/
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v1.32/rpm/repodata/repomd.xml.key
+      exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+    dest: /etc/yum.repos.d/kubernetes.repo
+
+- name: Set SELinux to permissive mode
+  ansible.builtin.command: setenforce 0
+
+- name: Update SELinux config
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX=enforcing$'
+    line: 'SELINUX=permissive'
+    state: present
+
+- name: Install required packages
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ required_packages }}"
+
+- name: Enable and start Docker service
+  ansible.builtin.systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: Add modules to modules-load.d
+  ansible.builtin.copy:
+    content: |
+      overlay
+      br_netfilter
+    dest: /etc/modules-load.d/k8s.con
+
+- name: Load modules
+  ansible.builtin.command: modprobe overla
+
+- name: Load modules
+  ansible.builtin.command: modprobe br_netfilte
+
+- name: Add sysctl params
+  ansible.builtin.copy:
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward = 1
+    dest: /etc/sysctl.d/k8s.con
+
+- name: Apply sysctl params
+  ansible.builtin.command: sysctl --system
+
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Ensure swap is disabled on boot
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*([^#\s]+\s+){2}swap\s'
+    state: absent
+
+- name: Install Kubernetes components
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+    disable_excludes: kubernetes
+  loop: "{{ k8s_packages }}"
+  notify:
+    - Enable and start kubelet
+
+- name: Enable kubelet
+  systemd:
+    name: kubelet
+    enabled: true
+    state: started
+
+- name: Initialize Kubernetes on the controller node
+  command: >
+    kubeadm init --pod-network-cidr=192.168.0.0/16
+  when: inventory_hostname == control
+  register: kubeadm_output
+  become: true
+
+- name: Save kubeadm join command to a file
+  copy:
+    content: "{{ kubeadm_output.stdout_lines | join('\n') }}"
+    dest: /tmp/kubeadm-init-output
+  when: inventory_hostname == control
+
+- name: Configure kubectl for the control node
+  shell: |
+    mkdir -p $HOME/.kube
+    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    chown $(id -u):$(id -g) $HOME/.kube/config
+  when: inventory_hostname == control
+
+- name: Install Calico network plugin
+  shell: |
+    kubectl apply -f https://docs.tigera.io/archive/v2.0/getting-started/kubernetes/installation/policy-controller.yaml
+  when: inventory_hostname == control
+
+- name: Get join command from the controller
+  shell: cat /tmp/kubeadm-init-output | grep -E 'kubeadm join.*'
+  register: join_command
+  delegate_to: control
+  run_once: true
+
+- name: Join worker nodes to the cluster
+  shell: "{{ join_command.stdout }}"
+  when: inventory_hostname in workers
+  become: true

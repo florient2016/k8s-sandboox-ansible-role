@@ -1,2 +1,7 @@
 ---
 # handlers file for k8s-sandboox-ansible-role
+- name: Enable and start kubelet
+  systemd:
+    name: kubelet
+    state: started
+    enabled: true

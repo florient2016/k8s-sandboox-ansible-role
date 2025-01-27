@@ -1,2 +1,32 @@
 ---
 # vars file for k8s-sandboox-ansible-role
+# This file contains variable definitions for the k8s-sandboox-ansible-role.
+# 
+# Variables:
+# - kubernetes_version: Specifies the version of Kubernetes to be installed.
+# - calico_version: Specifies the version of Calico to be installed for networking.
+# - controller_hostname: The hostname of the Kubernetes controller node.
+# - worker_nodes: A list of hostnames for the Kubernetes worker nodes.
+# - k8s_packages: A list of Kubernetes packages to be installed.
+# - required_packages: A list of additional required packages to be installed on the nodes.
+kubernetes_version: "1.27.0-0"
+calico_version: "v3.25.0"
+controller_hostname: "control"
+worker_nodes:
+  - "worker1"
+  - "worker2"
+k8s_packages:
+      - kubelet
+      - kubeadm
+      - kubectl
+required_packages:
+  - docker-ce 
+  - containerd.io 
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - yum-utils
+  - curl
+  - wget
+  - device-mapper-persistent-data
+  - lvm2
+  - yum-utils
