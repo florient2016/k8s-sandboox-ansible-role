@@ -114,8 +114,8 @@
     state: started
 
 - name: Initialize Kubernetes on the controller node
-  ansible.builtin.command: >
-    kubeadm init --pod-network-cidr=192.168.0.0/16
+  ansible.builtin.shell: >
+    kubeadm init 
   when: "'controller' in group_names"
   register: kubeadm_output
   become: true
