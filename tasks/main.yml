@@ -158,8 +158,19 @@
     mkdir -p $HOME/.kube
     cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     chown $(id -u):$(id -g) $HOME/.kube/config
+    export KUBECONFIG=/etc/kubernetes/admin.conf
   when: "'controller' in group_names"
 
+- name: renew all certificates
+  shell: kubeadm alpha certs renew all
+  when: "'controller' in group_names"
+
+- name: Enable kubelet
+  systemd:
+    name: kubelet
+    enabled: true
+    state: restarted
+    
 - name: Install Calico network plugin
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
