@@ -113,9 +113,30 @@
     enabled: true
     state: started
 
+- name: Remove /etc/containerd/config.toml
+  ansible.builtin.file:
+    path: /etc/containerd/config.toml
+    state: absent
+
+- name: Restart containerd
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+    enabled: yes
+
+- name: Reload systemd daemon
+  shell: sudo systemctl daemon-reload
+
+- name: Restart docker
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+    enabled: yes
+
+
 - name: Initialize Kubernetes on the controller node
   ansible.builtin.shell: >
-    kubeadm init 
+    kubeadm init --pod-network-cidr=192.168.0.0/24
   when: "'controller' in group_names"
   register: kubeadm_output
   become: true
