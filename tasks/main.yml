@@ -72,10 +72,10 @@
     dest: /etc/modules-load.d/k8s.con
 
 - name: Load modules
-  ansible.builtin.command: modprobe overla
+  ansible.builtin.command: modprobe overlay
 
 - name: Load modules
-  ansible.builtin.command: modprobe br_netfilte
+  ansible.builtin.command: modprobe br_netfilter
 
 - name: Add sysctl params
   ansible.builtin.copy:
