@@ -133,6 +133,12 @@
     state: restarted
     enabled: yes
 
+- name: disable and stop firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  when: "'controller' in group_names"
 
 - name: Initialize Kubernetes on the controller node
   ansible.builtin.shell: >
@@ -156,7 +162,7 @@
 
 - name: Install Calico network plugin
   shell: |
-    kubectl apply -f https://docs.tigera.io/archive/v2.0/getting-started/kubernetes/installation/policy-controller.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
   when: "'controller' in group_names"
 
 - name: Get join command from the controller
@@ -167,7 +173,12 @@
 
 - name: Join worker nodes to the cluster
   shell: "{{ join_command.stdout }}"
-  when: inventory_hostname in workers
+  when: "'worker1' in workers"
+  become: true
+
+- name: Join worker nodes to the cluster
+  shell: "{{ join_command.stdout }}"
+  when: "'worker2' in workers"
   become: true
 
 
