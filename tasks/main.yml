@@ -140,6 +140,10 @@
     enabled: no
   when: "'controller' in group_names"
 
+- name: renew all certificates
+  shell: kubeadm certs renew all
+  when: "'controller' in group_names"
+
 - name: Initialize Kubernetes on the controller node
   ansible.builtin.shell: >
     kubeadm init --pod-network-cidr=192.168.0.0/24 --ignore-preflight-errors all
@@ -161,16 +165,14 @@
     export KUBECONFIG=/etc/kubernetes/admin.conf
   when: "'controller' in group_names"
 
-- name: renew all certificates
-  shell: kubeadm alpha certs renew all
-  when: "'controller' in group_names"
 
 - name: Enable kubelet
   systemd:
     name: kubelet
     enabled: true
     state: restarted
-    
+  when: "'controller' in group_names"
+
 - name: Install Calico network plugin
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
